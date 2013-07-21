@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<script src="jquery-1.10.1.min.js"></script>
+		<script src="jquery-ui-1.10.3.custom.min.js"></script>
+
+		<link rel="stylesheet" href="jquery-ui-1.10.3.custom.css">
+		
+		<script>
+			$(function(){
+				var ws;
+
+				$("#heat-bar").progressbar({max: 3000}).hide();
+				$("#progress").progressbar({max: 10}).hide();
+				
+				$('#start').click(function(){
+					ws = new WebSocket("ws://localhost:8888/");
+					ws.onmessage = function (evt) {
+						var data = JSON.parse(evt.data);
+						$("#heat-bar").progressbar('value', data.heat);
+						$("#progress").progressbar('value', data.progress)
+						$('#wood').text(data.wood);
+						$('#heat').text(data.heat);
+
+						if (data.fail == true) {
+							$("#messages").text("The charcoal combusted! :(");
+							ws.close();
+						}
+
+						if (data.success == true) {
+							$("#messages").text("Success! You have made charcoal!")
+							ws.close();
+						}
+					};
+					
+					$("#heat-bar").show();
+					$("#progress").show();
+				});
+				
+				$('#add_1').click(function(){
+					ws.send(JSON.stringify({type: "add_1"}));
+				});
+
+				$('#add_5').click(function(){
+					ws.send(JSON.stringify({type: "add_5"}));
+				});
+				
+				$('#stop').click(function(){
+					ws.close();
+					$("#heat-bar").hide();
+					$("#progress").hide();
+				});
+
+			});
+		</script>
+	</head>
+	<body>
+		<h3>Charcoal Brazier Test</h3>
+		<p>The goal of the brazier test is to keep the heat level between 2000-2500 degrees by managing the addition of wood.</p>
+		<div id="debug">
+			<h5>Debug Info</h5>
+			<p>Wood: <span id="wood"></span></p>
+			<p>Heat: <span id="heat"></span></p>
+		</div>
+
+		<div id="messages"></div>
+
+		<h3>Progress</h3>
+		<div id="progress"></div>
+
+		<h3>Heat</h3>
+		<div id="heat-bar"></div>
+
+		<button id="start">Start</button> <button id="add_1">Add 1 wood</button> <button id="add_5">Add 5 wood</button> <button id="stop">Stop</button>
+	</body>
+</html>
