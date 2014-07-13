@@ -1,8 +1,53 @@
 from tornado.websocket import WebSocketHandler
 from tornado.ioloop import PeriodicCallback
+from tornado.httpclient import AsyncHTTPClient, HTTPRequest
 import tornado.ioloop
 import tornado.web
 import json
+
+class WebSocketGame(WebSocketHandler):
+    def open(self):
+        self.game_data = {}
+        self.initialize_game()
+        self.write_message(self.game_data)
+    
+    def on_message(self, message):
+        message = json.loads(message)
+        if message['type'] == 'login':
+            self.game_name = message['name']
+            self.game_id = message['game_id']
+            self.loop_callback = PeriodicCallback(self.do_loop, 5000)
+        else:
+            self.handle_message(message)
+    
+    def on_close(self):
+        self.loop_callback.stop()
+        pass
+    
+    def update_status(self, status):
+        if status not in ('S', 'I', 'U', 'F'): # Start, InProgress, Succesful, Fail
+            return # Let's try not to hit the status API with bad values.
+        
+        url = "http://localhost:8080/private_api/gametask/{}/{}/{}".format(self.game_name, self.game_id, status)
+        request = HTTPRequest(url=url)
+        http = AsyncHTTPClient()
+        http.fetch(request, self.callback)
+
+    def callback(self, response):
+        # Catch any errors.
+        print "Callback fired."
+        print "HTTP Code: {}".format(response.code)
+        
+        
+class Brazier(WebSocketGame):
+    def initialize_game(self):
+        pass
+    
+    def do_loop(self):
+        pass
+    
+    def handle_message(self):
+        pass
 
 class WebSocketTest(WebSocketHandler):
     def open(self):
